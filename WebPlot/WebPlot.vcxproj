@@ -12,8 +12,11 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="AutoId.cpp" />
+    <ClCompile Include="Axes.cpp" />
     <ClCompile Include="Figure.cpp" />
+    <ClCompile Include="JSON.cpp" />
     <ClCompile Include="Plot.cpp" />
+    <ClCompile Include="Series.cpp" />
     <ClCompile Include="WebPlot.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -22,6 +25,7 @@
     <ClInclude Include="Figure.h" />
     <ClInclude Include="Plot.h" />
     <ClInclude Include="Series.h" />
+    <ClInclude Include="JSON.h" />
     <ClInclude Include="WebPlot.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

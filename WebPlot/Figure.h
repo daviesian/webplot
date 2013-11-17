@@ -9,17 +9,19 @@
 namespace WebPlotter {
 
 	class WebPlot;
-	class Figure : public AutoId {
+	class Figure : public AutoId, public JSON {
 
 	private:
 
-		std::vector<Plot> plots;
+		std::vector<Plot> plotList;
 
 	public:
 		Figure() : AutoId("Figure") { }
 
 		void addPlot(Plot& plot);
 		bool removePlot(Plot& plot);
+
+		std::string getJSON();
 	};
 }
 

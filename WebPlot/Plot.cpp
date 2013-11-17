@@ -16,3 +16,21 @@ bool Plot::removeAxes(Axes& axes) {
 	}
 	return false;
 }
+
+string Plot::getJSON() {
+	ostringstream s;
+	s << "{\"" << getId() << "\": ";
+		s << "{";
+			s << "\"axesList\": ";
+			s << "[";
+				for(auto i = axesList.begin(); i != axesList.end(); i++)
+				{
+					if (i != axesList.begin()) 
+						s << ", ";
+					s << i->getJSON();
+				}
+			s << "]";
+		s << "}";
+	s << "}";
+	return s.str();
+}

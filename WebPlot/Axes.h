@@ -8,7 +8,7 @@
 
 namespace WebPlotter {
 
-	class Axes : public AutoId {
+	class Axes : public AutoId, public JSON {
 	private:
 
 		std::vector<Series> seriesList;
@@ -18,6 +18,8 @@ namespace WebPlotter {
 
 		void addSeries(Series& series);
 		bool removeSeries(Series& series);
+
+		std::string getJSON();
 
 	};
 }

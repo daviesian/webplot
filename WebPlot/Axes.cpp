@@ -1,5 +1,7 @@
 #include "Axes.h"
 
+#include <sstream>
+
 using namespace WebPlotter;
 using namespace std;
 
@@ -15,4 +17,22 @@ bool Axes::removeSeries(Series& series) {
 		}
 	}
 	return false;
+}
+
+string Axes::getJSON() {
+	ostringstream s;
+	s << "{\"" << getId() << "\": ";
+		s << "{";
+			s << "\"seriesList\": ";
+			s << "[";
+				for(auto i = seriesList.begin(); i != seriesList.end(); i++)
+				{
+					if (i != seriesList.begin()) 
+						s << ", ";
+					s << i->getJSON();
+				}
+			s << "]";
+		s << "}";
+	s << "}";
+	return s.str();
 }
