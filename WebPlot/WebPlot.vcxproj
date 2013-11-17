@@ -15,6 +15,7 @@
     <ClCompile Include="Axes.cpp" />
     <ClCompile Include="Figure.cpp" />
     <ClCompile Include="JSON.cpp" />
+    <ClCompile Include="mongoose.c" />
     <ClCompile Include="Plot.cpp" />
     <ClCompile Include="Series.cpp" />
     <ClCompile Include="WebPlot.cpp" />
@@ -23,6 +24,7 @@
     <ClInclude Include="AutoId.h" />
     <ClInclude Include="Axes.h" />
     <ClInclude Include="Figure.h" />
+    <ClInclude Include="mongoose.h" />
     <ClInclude Include="Plot.h" />
     <ClInclude Include="Series.h" />
     <ClInclude Include="JSON.h" />
@@ -64,7 +66,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NO_SSL;WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
