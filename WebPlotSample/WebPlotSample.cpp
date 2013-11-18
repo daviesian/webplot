@@ -20,7 +20,6 @@ int main(int argc, char* argv[])
 
 	p.addAxes(a);
 
-
 	f.addPlot(p);
 
 	cout << f.getJSON() << endl;
