@@ -7,29 +7,39 @@
 using namespace std;
 using namespace WebPlotter;
 
+// Called on every web request (including WebSocket connections)
 int mg_begin_request(mg_connection* conn) {
-	cout << "BEGIN REQUEST" << endl;
 
-	string content = "Hello world";
+	// Log the request to the console.
+	cout << "REQ: " << mg_get_request_info(conn)->uri << endl;
 
-	mg_printf(conn,
-        "HTTP/1.1 200 OK\r\n"
-        "Content-Type: text/plain\r\n"
-        "Content-Length: %d\r\n"        // Always set Content-Length
-        "\r\n"
-        "%s",
-		content.length(), content.c_str());
+	return 0; // We haven't handled this request
+}
 
-	return 1;
+// Called whenever a new websocket connects.
+void mg_websocket_ready(mg_connection* conn) {
+
+}
+
+// Called when we receive data from a connected websocket.
+int mg_websocket_data(mg_connection* conn, int bits, char* data, size_t data_len) {
+	
+	// Echo data back for now.
+	mg_websocket_write(conn, WEBSOCKET_OPCODE_TEXT, data, data_len);
+
+	return 1; // Keep websocket alive
 }
 
 WebPlot::WebPlot(int port) {
 	mg_callbacks callbacks = {};
 
 	callbacks.begin_request = mg_begin_request;
+	callbacks.websocket_ready = mg_websocket_ready;
+	callbacks.websocket_data = mg_websocket_data;
 
 	const char * options[] = {
-		"listening_ports", "8080",
+		"document_root", "../static",
+		"listening_ports", "9090",
 		NULL
 	};
 	mg_start(&callbacks, NULL, options);
