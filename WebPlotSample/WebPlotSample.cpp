@@ -22,11 +22,6 @@ int main(int argc, char* argv[])
 
 	f.addPlot(p);
 
-	cout << f.getJSON() << endl;
-
-	cout << f.getId() << endl;
-	//f.removePlot(p);
-
 	webPlot.addFigure(f);
 
 	while(getchar())
@@ -35,7 +30,6 @@ int main(int argc, char* argv[])
 		webPlot.sendData(s);
 	}
 
-	system("pause");
 	return 0;
 }
 

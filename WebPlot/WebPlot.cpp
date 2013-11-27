@@ -63,6 +63,7 @@ WebPlot::WebPlot(int port) : webSocket(NULL) {
 		NULL
 	};
 	mg_start(&callbacks, this, options);
+	cout << "WebPlot server started on port " << port << endl;
 }
 
 void WebPlot::addFigure(Figure& f) {
