@@ -25,7 +25,15 @@ int main(int argc, char* argv[])
 	cout << f.getJSON() << endl;
 
 	cout << f.getId() << endl;
-	f.removePlot(p);
+	//f.removePlot(p);
+
+	webPlot.addFigure(f);
+
+	while(getchar())
+	{
+		webPlot.sendUpdate();
+		webPlot.sendData(s);
+	}
 
 	system("pause");
 	return 0;

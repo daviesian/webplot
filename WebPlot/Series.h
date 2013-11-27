@@ -12,6 +12,7 @@ namespace WebPlotter {
 		Series() : AutoId("Series") { }
 
 		std::string getJSON();
+		std::string getDataJSON();
 	};
 
 }

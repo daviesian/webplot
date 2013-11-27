@@ -9,7 +9,7 @@ using namespace std;
 using namespace WebPlotter;
 
 // Called on every web request (including WebSocket connections)
-int WebPlotter::Callbacks::mg_begin_request(mg_connection* conn) {
+int WebPlot::mg_begin_request(mg_connection* conn) {
 	auto t = static_cast<WebPlot*>(mg_get_request_info(conn)->user_data);
 
 	string uri = string(mg_get_request_info(conn)->uri);
@@ -28,13 +28,15 @@ int WebPlotter::Callbacks::mg_begin_request(mg_connection* conn) {
 }
 
 // Called whenever a new websocket connects.
-void WebPlotter::Callbacks::mg_websocket_ready(mg_connection* conn) {
+void WebPlot::mg_websocket_ready(mg_connection* conn) {
 	auto wp = static_cast<WebPlot*>(mg_get_request_info(conn)->user_data);
-	wp->webSockets.push_back(conn);
+	wp->webSocket = conn;
+
+	wp->sendUpdate();
 }
 
 // Called when we receive data from a connected websocket.
-int WebPlotter::Callbacks::mg_websocket_data(mg_connection* conn, int bits, char* data, size_t data_len) {
+int WebPlot::mg_websocket_data(mg_connection* conn, int bits, char* data, size_t data_len) {
 	auto t = static_cast<WebPlot*>(mg_get_request_info(conn)->user_data);
 	
 	// Echo data back for now.
@@ -43,31 +45,81 @@ int WebPlotter::Callbacks::mg_websocket_data(mg_connection* conn, int bits, char
 	return 1; // Keep websocket alive
 }
 
-WebPlot::WebPlot(int port) {
+WebPlot::WebPlot(int port) : webSocket(NULL) {
 	mg_callbacks callbacks = {};
 	
-	callbacks.begin_request = Callbacks::mg_begin_request;
-	callbacks.websocket_ready = Callbacks::mg_websocket_ready;
-	callbacks.websocket_data = Callbacks::mg_websocket_data;
+	callbacks.begin_request = WebPlot::mg_begin_request;
+	callbacks.websocket_ready = WebPlot::mg_websocket_ready;
+	callbacks.websocket_data = WebPlot::mg_websocket_data;
+
+	stringstream ss;
+	ss << port;
+	string s = ss.str();
+	const char * cstr = s.c_str();
 
 	const char * options[] = {
 		"document_root", "../static",
-		"listening_ports", "9090",
+		"listening_ports", cstr,
 		NULL
 	};
 	mg_start(&callbacks, this, options);
 }
 
 void WebPlot::addFigure(Figure& f) {
+	f.webPlot = this;
 	figures.push_back(f);
+	sendUpdate();
 }
 
 bool WebPlot::removeFigure(Figure& f) {
 	for(auto i = figures.begin(); i != figures.end(); i++) {
 		if (i->getId() == f.getId()) {
 			figures.erase(i);
+			sendUpdate();
 			return true;
 		}
 	}
+	sendUpdate();
 	return false;
+}
+
+void WebPlot::sendMessage(string msg) {
+	if (webSocket != NULL) {
+		mg_websocket_write(webSocket, WEBSOCKET_OPCODE_TEXT, msg.c_str(), msg.length());
+	}
+}
+
+string WebPlot::getJSON() {
+	ostringstream s;
+	s << "{\"webPlot\": ";
+		s << "{";
+			s << "\"figureList\": ";
+			s << "[";
+				for(auto i = figures.begin(); i != figures.end(); i++)
+				{
+					if (i != figures.begin()) 
+						s << ", ";
+					s << i->getJSON();
+				}
+			s << "]";
+		s << "}";
+	s << "}";
+	return s.str();
+}
+
+void WebPlot::sendUpdate() {
+	sendMessage(getJSON());
+}
+
+void WebPlot::sendData(Series& series) {
+	ostringstream s;
+	s << "{\"dataUpdate\": ";
+		s << "[";
+			s << series.getDataJSON();
+		s << "]";
+	s << "}";
+
+	string msg = s.str();
+
+	sendMessage(msg);
 }

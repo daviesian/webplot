@@ -13,15 +13,23 @@ namespace WebPlotter {
 
 	private:
 
+		WebPlot* webPlot;
 		std::vector<Plot> plotList;
 
+		void sendUpdate();
+
 	public:
-		Figure() : AutoId("Figure") { }
+		Figure() : AutoId("Figure"), webPlot(NULL) { }
 
 		void addPlot(Plot& plot);
 		bool removePlot(Plot& plot);
 
 		std::string getJSON();
+
+		const std::vector<Plot> getPlots() { return plotList; }
+
+		friend class WebPlotter::WebPlot;
+		friend class WebPlotter::Plot;
 	};
 }
 

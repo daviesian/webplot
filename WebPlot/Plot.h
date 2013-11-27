@@ -8,6 +8,7 @@
 
 namespace WebPlotter {
 
+	class Figure;
 	class Plot : public AutoId, public JSON {
 
 	private:
@@ -20,6 +21,8 @@ namespace WebPlotter {
 		bool removeAxes(Axes& axes);
 
 		std::string getJSON();
+
+		friend class WebPlotter::Figure;
 	};
 
 }
