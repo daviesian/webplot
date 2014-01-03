@@ -19,19 +19,23 @@ bool Axes::removeSeries(Series& series) {
 	return false;
 }
 
+vector<Series> Axes::getSeriesList() {
+	return seriesList;
+}
+
 string Axes::getJSON() {
 	ostringstream s;
-	s << "{\"" << getId() << "\": ";
+	s << "{";
+	    s << "\"rangeX\": " << "\"auto\"" << ",";
+		s << "\"rangeY\": " << "\"auto\""<< ",";
+		s << "\"seriesList\": ";
 		s << "{";
-			s << "\"seriesList\": ";
-			s << "[";
-				for(auto i = seriesList.begin(); i != seriesList.end(); i++)
-				{
-					if (i != seriesList.begin()) 
-						s << ", ";
-					s << i->getJSON();
-				}
-			s << "]";
+			for(auto i = seriesList.begin(); i != seriesList.end(); i++)
+			{
+				if (i != seriesList.begin()) 
+					s << ", ";
+				s << "\"" << i->getId() << "\": " << i->getJSON();
+			}
 		s << "}";
 	s << "}";
 	return s.str();

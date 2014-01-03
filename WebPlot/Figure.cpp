@@ -29,17 +29,15 @@ void Figure::sendUpdate() {
 
 string Figure::getJSON() {
 	ostringstream s;
-	s << "{\"" << getId() << "\": ";
+	s << "{";
+		s << "\"plotList\": ";
 		s << "{";
-			s << "\"plotList\": ";
-			s << "[";
-				for(auto i = plotList.begin(); i != plotList.end(); i++)
-				{
-					if (i != plotList.begin()) 
-						s << ", ";
-					s << i->getJSON();
-				}
-			s << "]";
+			for(auto i = plotList.begin(); i != plotList.end(); i++)
+			{
+				if (i != plotList.begin()) 
+					s << ", ";
+				s << "\"" << i->getId() << "\": " << i->getJSON();
+			}
 		s << "}";
 	s << "}";
 	return s.str();

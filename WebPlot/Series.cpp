@@ -2,28 +2,42 @@
 
 #include <string>
 #include <sstream>
+#include <cmath>
 
 using namespace WebPlotter;
 using namespace std;
 
+string join(vector<float> v, string sep = ",") {
+	ostringstream s;
+	for(int i = 0; i < v.size(); i++) {
+		if (i > 0)
+			s << sep;
+		s << v[i];
+	}
+	return s.str();
+}
+
+Series::Series() : AutoId("Series") {
+	for(float x = 0; x < 2*3.1415926; x+= 0.01) {
+		xs.push_back(x);
+		ys.push_back(sin(x));
+	}
+}
+
 string Series::getJSON() {
 	ostringstream s;
-	s << "{\"" << getId() << "\": ";
-		s << "{";
-			s << "\"type\": " << "\"line\"" << ",";
-			s << "\"color\": " << "\"#880000\"";
-		s << "}";
+	s << "{";
+		s << "\"type\": " << "\"line\"" << ",";
+		s << "\"color\": " << "\"#880000\"";
 	s << "}";
 	return s.str();
 }
 
 string Series::getDataJSON() {
 	ostringstream s;
-	s << "{\"" << getId() << "\": ";
 		s << "{";
-			s << "\"xs\": [" << "0,1,2,3,4,5,6,7,8,9" << "],";
-			s << "\"ys\": [" << "0,1,4,9,16,25,36,49,64,81" << "]";
+			s << "\"xs\": [" << join(xs) << "],";
+			s << "\"ys\": [" << join(ys) << "]";
 		s << "}";
-	s << "}";
 	return s.str();
 }

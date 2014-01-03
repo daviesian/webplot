@@ -1,0 +1,22 @@
+div.figure
+{
+    background-color: #f2f2f2;
+}
+
+div.plot
+{
+    background-color: #edfbff;
+    position: relative;
+    display:inline-block;
+    margin: 10px;
+}
+
+canvas.axes
+{
+    position: absolute;
+}
+
+canvas.series
+{
+    position: absolute;
+}

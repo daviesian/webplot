@@ -33,6 +33,7 @@ void WebPlot::mg_websocket_ready(mg_connection* conn) {
 	wp->webSocket = conn;
 
 	wp->sendUpdate();
+	wp->sendData();
 }
 
 // Called when we receive data from a connected websocket.
@@ -60,6 +61,7 @@ WebPlot::WebPlot(int port) : webSocket(NULL) {
 	const char * options[] = {
 		"document_root", "../static",
 		"listening_ports", cstr,
+		"request_timeout_ms", "0",
 		NULL
 	};
 	mg_start(&callbacks, this, options);
@@ -95,14 +97,14 @@ string WebPlot::getJSON() {
 	s << "{\"webPlot\": ";
 		s << "{";
 			s << "\"figureList\": ";
-			s << "[";
+			s << "{";
 				for(auto i = figures.begin(); i != figures.end(); i++)
 				{
 					if (i != figures.begin()) 
 						s << ", ";
-					s << i->getJSON();
+					s << "\"" << i->getId() << "\": " << i->getJSON();
 				}
-			s << "]";
+			s << "}";
 		s << "}";
 	s << "}";
 	return s.str();
@@ -115,9 +117,32 @@ void WebPlot::sendUpdate() {
 void WebPlot::sendData(Series& series) {
 	ostringstream s;
 	s << "{\"dataUpdate\": ";
-		s << "[";
-			s << series.getDataJSON();
-		s << "]";
+		s << "{";
+			s << "\"" << series.getId() << "\": " << series.getDataJSON();
+		s << "}";
+	s << "}";
+
+	string msg = s.str();
+
+	sendMessage(msg);
+}
+
+void WebPlot::sendData() {
+	bool firstSeries = true;
+	ostringstream s;
+	s << "{\"dataUpdate\": ";
+		s << "{";
+		for(Figure f : this->figures)
+			for(Plot p : f.getPlots()) 
+				for(Axes a : p.getAxesList())
+					for(Series sr : a.getSeriesList())
+					{
+						if (!firstSeries)
+							s << ",";
+						s << "\"" << sr.getId() << "\": " << sr.getDataJSON();
+						firstSeries = false;
+					}
+		s << "}";
 	s << "}";
 
 	string msg = s.str();

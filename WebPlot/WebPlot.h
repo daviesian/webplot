@@ -34,6 +34,7 @@ namespace WebPlotter {
 
 		void sendUpdate();
 		void sendData(Series& series);
+		void sendData();
 	
 	};
 

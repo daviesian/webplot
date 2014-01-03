@@ -20,6 +20,8 @@ namespace WebPlotter {
 		void addAxes(Axes& axes);
 		bool removeAxes(Axes& axes);
 
+		std::vector<Axes> getAxesList();
+
 		std::string getJSON();
 
 		friend class WebPlotter::Figure;

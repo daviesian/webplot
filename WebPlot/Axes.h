@@ -18,6 +18,7 @@ namespace WebPlotter {
 
 		void addSeries(Series& series);
 		bool removeSeries(Series& series);
+		std::vector<Series> getSeriesList();
 
 		std::string getJSON();
 
