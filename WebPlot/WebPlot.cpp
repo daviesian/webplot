@@ -135,11 +135,11 @@ void WebPlot::sendData() {
 		for(Figure f : this->figures)
 			for(Plot p : f.getPlots()) 
 				for(Axes a : p.getAxesList())
-					for(Series sr : a.getSeriesList())
+					for(Series* sr : a.getSeriesList())
 					{
 						if (!firstSeries)
 							s << ",";
-						s << "\"" << sr.getId() << "\": " << sr.getDataJSON();
+						s << "\"" << sr->getId() << "\": " << sr->getDataJSON();
 						firstSeries = false;
 					}
 		s << "}";

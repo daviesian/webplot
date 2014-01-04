@@ -6,12 +6,12 @@ using namespace WebPlotter;
 using namespace std;
 
 void Axes::addSeries(Series& series) {
-	seriesList.push_back(series);
+	seriesList.push_back(&series);
 }
 
 bool Axes::removeSeries(Series& series) {
 	for (auto i = seriesList.begin(); i != seriesList.end(); i++) {
-		if (i->getId() == series.getId()) {
+		if ((*i)->getId() == series.getId()) {
 			seriesList.erase(i);
 			return true;
 		}
@@ -19,22 +19,31 @@ bool Axes::removeSeries(Series& series) {
 	return false;
 }
 
-vector<Series> Axes::getSeriesList() {
+vector<Series*> Axes::getSeriesList() {
 	return seriesList;
 }
 
 string Axes::getJSON() {
 	ostringstream s;
 	s << "{";
-	    s << "\"rangeX\": " << "\"auto\"" << ",";
-		s << "\"rangeY\": " << "\"auto\""<< ",";
+
+		if (autoX)
+			s << "\"rangeX\": " << "\"auto\"" << ",";
+		else
+			s << "\"rangeX\": " << "[" << minX << "," << maxX << "]" << ",";
+
+		if (autoY)
+			s << "\"rangeY\": " << "\"auto\"" << ",";
+		else
+			s << "\"rangeY\": " << "[" << minY << "," << maxY << "]" << ",";
+
 		s << "\"seriesList\": ";
 		s << "{";
 			for(auto i = seriesList.begin(); i != seriesList.end(); i++)
 			{
 				if (i != seriesList.begin()) 
 					s << ", ";
-				s << "\"" << i->getId() << "\": " << i->getJSON();
+				s << "\"" << (*i)->getId() << "\": " << (*i)->getJSON();
 			}
 		s << "}";
 	s << "}";

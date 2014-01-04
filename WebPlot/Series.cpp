@@ -7,37 +7,50 @@
 using namespace WebPlotter;
 using namespace std;
 
-string join(vector<float> v, string sep = ",") {
-	ostringstream s;
-	for(int i = 0; i < v.size(); i++) {
-		if (i > 0)
-			s << sep;
-		s << v[i];
-	}
-	return s.str();
-}
-
-Series::Series() : AutoId("Series") {
-	for(float x = 0; x < 2*3.1415926; x+= 0.01) {
-		xs.push_back(x);
-		ys.push_back(sin(x));
+string typeToString(SeriesType t) {
+	switch (t)
+	{
+	case WebPlotter::LINE:
+		return "line";
+	case WebPlotter::SCATTER:
+		return "scatter";
+	default:
+		return "scatter";
 	}
 }
 
 string Series::getJSON() {
 	ostringstream s;
 	s << "{";
-		s << "\"type\": " << "\"line\"" << ",";
-		s << "\"color\": " << "\"#880000\"";
+		s << "\"type\": " << "\"" << typeToString(type) << "\"" << ",";
+		s << "\"color\": " << "\"" << color << "\"";
 	s << "}";
 	return s.str();
 }
 
 string Series::getDataJSON() {
+	pair<string,string> pointStrings = getPointStrings();
+
 	ostringstream s;
 		s << "{";
-			s << "\"xs\": [" << join(xs) << "],";
-			s << "\"ys\": [" << join(ys) << "]";
+			s << "\"xs\": [" << pointStrings.first << "],";
+			s << "\"ys\": [" << pointStrings.second << "]";
 		s << "}";
 	return s.str();
+}
+
+SeriesType Series::getType() {
+	return type;
+}
+
+void Series::setType(SeriesType t) {
+	type = t;
+}
+
+string Series::getColor() {
+	return color;
+}
+
+void Series::setColor(string c) {
+	color = c;
 }

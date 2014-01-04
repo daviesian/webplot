@@ -39,6 +39,12 @@
     <ClCompile Include="mongoose.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="ArraySeries.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="TimeSeries.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="WebPlot.h">
@@ -63,6 +69,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="mongoose.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ArraySeries.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TimeSeries.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -30,12 +30,11 @@ function doFullUpdate(u)
     console.log("Full Update:", u);
 
     clearFigures();
+    var container = $("#figures");
     for (var f in u.figureList)
     {
-        var figure = createFigure(f, u.figureList[f]);
+        var figure = createFigure(f, u.figureList[f], container);
 
-        // Add this figure to the actual page.
-        $("#figures").append(figure);
 
     }
 }
@@ -46,7 +45,7 @@ function clearFigures()
     //seriesList = {};
 }
 
-function createFigure(id, f)
+function createFigure(id, f, container)
 {
     console.info("Create Figure:", f);
 
@@ -54,11 +53,13 @@ function createFigure(id, f)
     var div = $("<div/>").attr("id", id)
                          .addClass("figure");
 
+    // Add this figure to the actual page.
+    container.append(div);
     // Create the plots, add them to the div.
 
     for (var p in f.plotList)
     {
-        var plot = createPlot(p, f.plotList[p], 300, 300);
+        var plot = createPlot(p, f.plotList[p], div.width(), 300);
         div.append(plot);
     }
 
@@ -170,18 +171,21 @@ function redrawAxes(axes)
     if (spec.rangeX == "auto")
     {
         // If x-range is auto, cache range on all series and then calculate combined min and max for use in drawing ticks.
-        var minX = Number.MAX_VALUE;
-        var maxX = -Number.MAX_VALUE;
+        var minX = null;//Number.MAX_VALUE;
+        var maxX = null;//-Number.MAX_VALUE;
         for (var sc in seriesCanvasList)
         {
             var seriesId = seriesCanvasList[sc].attr("id");
             if (seriesData[seriesId].cachedMinX == undefined)
                 cacheDataRange(seriesId);
 
-            minX = Math.min(minX, seriesData[seriesId].cachedMinX);
-            maxX = Math.max(maxX, seriesData[seriesId].cachedMaxX);
+            minX = Math.min(minX || Number.MAX_VALUE, seriesData[seriesId].cachedMinX);
+            maxX = Math.max(maxX || -Number.MAX_VALUE, seriesData[seriesId].cachedMaxX);
         }
         //console.log("Auto X min", minX, ", max", maxX);
+
+        minX = minX == null ? NaN : minX;
+        maxX = maxX == null ? NaN : maxX;
     }
     else
     {
@@ -192,17 +196,20 @@ function redrawAxes(axes)
     if (spec.rangeY == "auto")
     {
         // If y-range is auto, cache range on all series and then calculate combined min and max for use in drawing ticks.
-        var minY = Number.MAX_VALUE;
-        var maxY = -Number.MAX_VALUE;
+        var minY = null;//Number.MAX_VALUE;
+        var maxY = null;//-Number.MAX_VALUE;
         for (var sc in seriesCanvasList)
         {
             var seriesId = seriesCanvasList[sc].attr("id");
             if (seriesData[seriesId].cachedMinY == undefined)
                 cacheDataRange(seriesId);
 
-            minY = Math.min(minY, seriesData[seriesId].cachedMinY);
-            maxY = Math.max(maxY, seriesData[seriesId].cachedMaxY);
+            minY = Math.min(minY || Number.MAX_VALUE, seriesData[seriesId].cachedMinY);
+            maxY = Math.max(maxY || -Number.MAX_VALUE, seriesData[seriesId].cachedMaxY);
         }
+
+        minY = minY == null ? NaN : minY;
+        maxY = maxY == null ? NaN : maxY;
         //console.log("Auto Y min", minY, ", max", maxY);
     }
     else
@@ -211,12 +218,25 @@ function redrawAxes(axes)
         var maxY = spec.rangeY[1];
     }
 
+    // Expand range slightly
+
+    var rangeX = maxX - minX;
+    var rangeY = maxY - minY;
+
+    var expansion = 0.1;
+
+    maxX += expansion * rangeX / 2;
+    minX -= expansion * rangeX / 2;
+
+    maxY += expansion * rangeY / 2;
+    minY -= expansion * rangeY / 2;
+
     // Calculate and draw ticks.
 
     var xAxisY = 0;
     var yAxisX = 0;
-    var xAxisTop = Math.floor(lerp(minY, maxY, xAxisY, margins.top + innerHeight, margins.top)) + 0.5;
-    var yAxisLeft = Math.floor(lerp(minX, maxX, yAxisX, margins.left, margins.left + innerWidth)) + 0.5;
+    var xAxisTop = Math.floor(lerp(minY, maxY, Math.max(minY,Math.min(maxY,xAxisY)), margins.top + innerHeight, margins.top)) + 0.5;
+    var yAxisLeft = Math.floor(lerp(minX, maxX, Math.max(minX,Math.min(maxX,yAxisX)), margins.left, margins.left + innerWidth)) + 0.5;
 
     ctx.beginPath();
     ctx.moveTo(margins.left + 0, xAxisTop);
@@ -238,7 +258,7 @@ function redrawAxes(axes)
         t = ticksX.positions[t];
 
         var x = Math.floor(lerp(minX, maxX, t, margins.left, margins.left + innerWidth)) + 0.5;
-        if (Math.abs(x - yAxisLeft) > ticksX.space || Math.abs(xAxisTop - (margins.top + innerHeight)) < 2)
+        if (Math.abs(x - yAxisLeft) > ticksX.space/2 || Math.abs(xAxisTop - (margins.top + innerHeight)) < 2)
             ctx.fillText(t.toFixed(Math.max(0,-ticksX.order+1)), x, xAxisTop + tickLength + 1);
 
         ctx.beginPath();
@@ -258,7 +278,7 @@ function redrawAxes(axes)
         t = ticksY.positions[t];
 
         var y = height - lerp(minY, maxY, t, margins.bottom, margins.bottom + innerHeight);
-        if (Math.abs(y - xAxisTop) > ticksY.space || Math.abs(yAxisLeft - margins.left) < 2)
+        if (Math.abs(y - xAxisTop) > ticksY.space/2 || Math.abs(yAxisLeft - margins.left) < 2)
             ctx.fillText(t.toFixed(Math.max(0, -ticksY.order + 1)), yAxisLeft - tickLength - 1, y);
 
         ctx.beginPath();
@@ -352,15 +372,15 @@ function lerp(inMin, inMax, val, outMin, outMax)
 
 function getTicks(min, max, length, ctx)
 {
-    if (isNaN(min) || isNaN(max) || isNaN(length) || !isFinite(min) || !isFinite(max) || !isFinite(length))
+    //console.log("getTicks", min, max, length);
+    if (isNaN(min) || isNaN(max) || isNaN(length) || !isFinite(min) || !isFinite(max) || !isFinite(length) || min == max)
     {
         console.warn("NaN or infinity in calculating ticks. Return none.", min, max, length);
         return [];
     }
 
-    //console.log("getTicks", min, max, length);
-    var orderMax = Math.ceil(Math.log(max) / Math.log(10));
-    var sizeString = new Array(Math.abs(orderMax) + 3).join("0");
+    var orderMax = max == 0 ? 1 : Math.ceil(Math.log(Math.abs(max)) / Math.log(10));
+    var sizeString = new Array(Math.abs(orderMax) + 4).join("0");
     //console.log(max, order, sizeString);
     var minTickSpace = ctx.measureText(sizeString).width;
 
@@ -442,7 +462,7 @@ function cacheDataRange(seriesId)
     var minY = Number.MAX_VALUE;
     var maxY = -Number.MAX_VALUE;
 
-    if (data.xs == undefined || data.ys == undefined || data.xs.length != data.ys.length)
+    if (data.xs == undefined || data.ys == undefined || data.xs.length != data.ys.length || data.xs.length == 0)
     {
         console.warn("Cannot cache data range on", seriesId);
         return;

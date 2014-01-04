@@ -1,4 +1,7 @@
 #include "WebPlot.h"
+#include "ArraySeries.h"
+#include "TimeSeries.h"
+
 #include <iostream>
 #include <deque>
 #include <cmath>
@@ -11,13 +14,22 @@ int main(int argc, char* argv[])
 {
 	WebPlot webPlot(8080);
 
+	const int size = 100;
+	float xs[size];
+	float ys[size];
+
+	for (int i = 0; i < size; i++) {
+		xs[i] = i*2*3.1415926 / size;
+		ys[i] = sin(xs[i]);
+	}
+
 	Figure f;
 	Plot p;
 	Plot p2;
-	Axes a;
+	Axes a(0,10);
 	Axes a2;
-	Series s;
-	Series s2;
+	ArraySeries s(xs,ys,size, LINE);
+	TimeSeries s2(300);
 
 	a.addSeries(s);
 	a2.addSeries(s2);
@@ -30,15 +42,20 @@ int main(int argc, char* argv[])
 
 	webPlot.addFigure(f);
 
-	while(true || getchar())
+	int count = 0;
+	while(true||getchar())
 	{
-		for(int i = 0; i < s2.ys.size() - 1; i++)
+		
+		for(int i = 0; i < size - 1; i++)
 		{
-			s2.ys[i] = s2.ys[i+1];
-			s2.xs[i] = s2.xs[i+1];
+			ys[i] = ys[i+1];
+			xs[i] = xs[i+1];
 		}
-		s2.xs[s2.xs.size()-1]+= 0.01;
-		s2.ys[s2.ys.size()-1] = sin(s2.xs[s2.xs.size()-1]);
+		xs[size-1] += 2*3.1415926 / size;
+		ys[size-1] = sin(xs[size-1]);
+
+		s2.addPoint(count, sin(count/100.0));
+		count++;
 		//cout << "Update sent." << endl;
 		//webPlot.sendUpdate();
 		webPlot.sendData(s2);
