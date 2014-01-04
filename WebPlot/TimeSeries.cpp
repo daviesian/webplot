@@ -2,10 +2,13 @@
 
 #include <sstream>
 
+
 using namespace WebPlotter;
 using namespace std;
 
 pair<string,string> TimeSeries::getPointStrings() {
+	lock_guard<mutex> lock(pointMutex);
+
 	ostringstream x,y;
 	for(int i = 0; i < xs.size(); i++) {
 		if (i > 0) {
@@ -21,8 +24,12 @@ pair<string,string> TimeSeries::getPointStrings() {
 }
 
 void TimeSeries::addPoint(float time, float value) {
-	xs.push_back(time);
-	ys.push_back(value);
+	
+	{
+		lock_guard<mutex> lock(pointMutex);
+		xs.push_back(time);
+		ys.push_back(value);
+	}
 
 	if (keepDuration > 0) {
 		discardUpTo(time - keepDuration);
@@ -30,6 +37,8 @@ void TimeSeries::addPoint(float time, float value) {
 }
 
 void TimeSeries::discardUpTo(float time) {
+	lock_guard<mutex> lock(pointMutex);
+
 	while(xs.front() < time) {
 		xs.pop_front();
 		ys.pop_front();

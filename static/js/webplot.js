@@ -1,6 +1,47 @@
 var socket = null;
 var seriesData = {};
 
+var PIXEL_RATIO = (function ()
+{
+    var ctx = document.createElement("canvas").getContext("2d"),
+        dpr = window.devicePixelRatio || 1,
+        bsr = ctx.webkitBackingStorePixelRatio ||
+              ctx.mozBackingStorePixelRatio ||
+              ctx.msBackingStorePixelRatio ||
+              ctx.oBackingStorePixelRatio ||
+              ctx.backingStorePixelRatio || 1;
+
+    return dpr / bsr;
+})();
+
+function createHiDPICanvas(w, h)
+{
+    var ratio = PIXEL_RATIO;
+    var can = document.createElement("canvas");
+    can.width = w * ratio;
+    can.height = h * ratio;
+    can.style.width = w + "px";
+    can.style.height = h + "px";
+    can.getContext("2d").setTransform(ratio, 0, 0, ratio, 0, 0);
+    return $(can);
+}
+
+function resizeHiDPICanvas(can, w, h)
+{
+    var ratio = PIXEL_RATIO;
+    can.width = w * ratio;
+    can.height = h * ratio;
+    can.style.width = w + "px";
+    can.style.height = h + "px";
+    can.getContext("2d").setTransform(ratio, 0, 0, ratio, 0, 0);
+    return $(can);
+}
+
+function roundToPixel(x)
+{
+    return Math.round(x*PIXEL_RATIO)/PIXEL_RATIO + 0.5/PIXEL_RATIO;
+}
+
 $(function() {
 
 	socket = new WebSocket("ws://" + document.location.host + "/ws");
@@ -94,19 +135,19 @@ function createAxes(id, a, width, height)
 
     // Create the canvas which will actually contain the graphics.
 
-    var canvas = $("<canvas/>").attr("id", id)
-                               .addClass("axes")
-                               .width(width)
-                               .height(height);
+    var canvas = createHiDPICanvas(width, height).attr("id", id)
+                               .addClass("axes");
+                               //.width(width)
+                               //.height(height);
 
-    canvas.attr("width", canvas.width());
-    canvas.attr("height", canvas.height());
+    //canvas.attr("width", canvas.width()*2);
+    //canvas.attr("height", canvas.height()*2);
 
     // Store a graphics context for later use.
     var ctx = canvas[0].getContext("2d");
     canvas.data("context", ctx);
     canvas.data("spec", a);
-    canvas.data("margins", { left: 35, bottom: 30, top: 10, right: 10 });
+    canvas.data("margins", { left: 40, bottom: 30, top: 10, right: 20 });
 
     var seriesCanvasList = [];
     // Build a reverse-lookup hash of series.
@@ -146,6 +187,9 @@ function redrawAxes(axes)
 
     ctx.clearRect(0, 0, width, height);
 
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 1 / PIXEL_RATIO;
+
     var innerHeight = height - margins.top - margins.bottom;
     var innerWidth = width - margins.left - margins.right;
 
@@ -154,11 +198,10 @@ function redrawAxes(axes)
     for (var c in seriesCanvasList)
     {
         c = seriesCanvasList[c];
-        c.width(innerWidth)
-         .height(innerHeight)
-         .css({ left: margins.left, top: margins.top });
-        c.attr("width", c.width());
-        c.attr("height", c.height());
+        resizeHiDPICanvas(c[0], innerWidth, innerHeight)
+            .css({ left: margins.left, top: margins.top });
+        //c.attr("width", c.width());
+        //c.attr("height", c.height());
         c.data("context", c[0].getContext("2d"));
     }
     
@@ -167,12 +210,13 @@ function redrawAxes(axes)
 
 
     // Work out axis ranges.
+    var expansion = 0.1;
 
     if (spec.rangeX == "auto")
     {
         // If x-range is auto, cache range on all series and then calculate combined min and max for use in drawing ticks.
-        var minX = null;//Number.MAX_VALUE;
-        var maxX = null;//-Number.MAX_VALUE;
+        var minX = null;
+        var maxX = null;
         for (var sc in seriesCanvasList)
         {
             var seriesId = seriesCanvasList[sc].attr("id");
@@ -186,6 +230,17 @@ function redrawAxes(axes)
 
         minX = minX == null ? NaN : minX;
         maxX = maxX == null ? NaN : maxX;
+
+        // Expand range slightly
+
+        var rangeX = maxX - minX;
+
+        maxX += expansion * rangeX / 2;
+        minX -= expansion * rangeX / 2;
+
+        seriesData[seriesId].axesMinX = minX;
+        seriesData[seriesId].axesMaxX = maxX;
+
     }
     else
     {
@@ -196,8 +251,8 @@ function redrawAxes(axes)
     if (spec.rangeY == "auto")
     {
         // If y-range is auto, cache range on all series and then calculate combined min and max for use in drawing ticks.
-        var minY = null;//Number.MAX_VALUE;
-        var maxY = null;//-Number.MAX_VALUE;
+        var minY = null;
+        var maxY = null;
         for (var sc in seriesCanvasList)
         {
             var seriesId = seriesCanvasList[sc].attr("id");
@@ -210,7 +265,17 @@ function redrawAxes(axes)
 
         minY = minY == null ? NaN : minY;
         maxY = maxY == null ? NaN : maxY;
-        //console.log("Auto Y min", minY, ", max", maxY);
+
+        // Expand range slightly
+
+        var rangeY = maxY - minY;
+
+        maxY += expansion * rangeY / 2;
+        minY -= expansion * rangeY / 2;
+
+        seriesData[seriesId].axesMinY = minY;
+        seriesData[seriesId].axesMaxY = maxY;
+
     }
     else
     {
@@ -218,25 +283,12 @@ function redrawAxes(axes)
         var maxY = spec.rangeY[1];
     }
 
-    // Expand range slightly
-
-    var rangeX = maxX - minX;
-    var rangeY = maxY - minY;
-
-    var expansion = 0.1;
-
-    maxX += expansion * rangeX / 2;
-    minX -= expansion * rangeX / 2;
-
-    maxY += expansion * rangeY / 2;
-    minY -= expansion * rangeY / 2;
-
-    // Calculate and draw ticks.
+    // Draw axis lines
 
     var xAxisY = 0;
     var yAxisX = 0;
-    var xAxisTop = Math.floor(lerp(minY, maxY, Math.max(minY,Math.min(maxY,xAxisY)), margins.top + innerHeight, margins.top)) + 0.5;
-    var yAxisLeft = Math.floor(lerp(minX, maxX, Math.max(minX,Math.min(maxX,yAxisX)), margins.left, margins.left + innerWidth)) + 0.5;
+    var xAxisTop = roundToPixel(lerp(minY, maxY, Math.max(minY,Math.min(maxY,xAxisY)), margins.top + innerHeight, margins.top));
+    var yAxisLeft = roundToPixel(lerp(minX, maxX, Math.max(minX,Math.min(maxX,yAxisX)), margins.left, margins.left + innerWidth));
 
     ctx.beginPath();
     ctx.moveTo(margins.left + 0, xAxisTop);
@@ -248,18 +300,32 @@ function redrawAxes(axes)
     ctx.lineTo(yAxisLeft, height - (margins.bottom + innerHeight));
     ctx.stroke();
 
+    // Calculate and draw ticks.
+
     ctx.textAlign = "center";
     ctx.textBaseline = "top";
 
+
     var ticksX = getTicks(minX, maxX, innerWidth, ctx);
+
+    for (var t in ticksX.minorPositions)
+    {
+        t = ticksX.minorPositions[t];
+
+        var x = roundToPixel(lerp(minX, maxX, t, margins.left, margins.left + innerWidth));
+        ctx.beginPath();
+        ctx.moveTo(x, xAxisTop);
+        ctx.lineTo(x, xAxisTop + tickLength / 2);
+        ctx.stroke();
+    }
 
     for (var t in ticksX.positions)
     {
         t = ticksX.positions[t];
 
-        var x = Math.floor(lerp(minX, maxX, t, margins.left, margins.left + innerWidth)) + 0.5;
-        if (Math.abs(x - yAxisLeft) > ticksX.space/2 || Math.abs(xAxisTop - (margins.top + innerHeight)) < 2)
-            ctx.fillText(t.toFixed(Math.max(0,-ticksX.order+1)), x, xAxisTop + tickLength + 1);
+        var x = roundToPixel(lerp(minX, maxX, t, margins.left, margins.left + innerWidth));
+        if (Math.abs(x - yAxisLeft) > ticksX.space / 2 || Math.abs(xAxisTop - (margins.top + innerHeight)) < 2)
+            ctx.fillText(t.toFixed(Math.max(0, -ticksX.order + 1)), x, xAxisTop + tickLength + 1);
 
         ctx.beginPath();
         ctx.moveTo(x, xAxisTop);
@@ -273,17 +339,29 @@ function redrawAxes(axes)
 
     var ticksY = getTicks(minY, maxY, innerHeight, ctx);
 
+    for (var t in ticksY.minorPositions)
+    {
+        t = ticksY.minorPositions[t];
+
+        var y = roundToPixel(height - lerp(minY, maxY, t, margins.bottom, margins.bottom + innerHeight));
+
+        ctx.beginPath();
+        ctx.moveTo(yAxisLeft - tickLength/2, y);
+        ctx.lineTo(yAxisLeft, y);
+        ctx.stroke();
+    }
+
     for (var t in ticksY.positions)
     {
         t = ticksY.positions[t];
 
-        var y = height - lerp(minY, maxY, t, margins.bottom, margins.bottom + innerHeight);
-        if (Math.abs(y - xAxisTop) > ticksY.space/2 || Math.abs(yAxisLeft - margins.left) < 2)
-            ctx.fillText(t.toFixed(Math.max(0, -ticksY.order + 1)), yAxisLeft - tickLength - 1, y);
+        var y = roundToPixel(height - lerp(minY, maxY, t, margins.bottom, margins.bottom + innerHeight));
+        if (Math.abs(y - xAxisTop) > ticksY.space / 2 || Math.abs(yAxisLeft - margins.left) < 2)
+            ctx.fillText(t.toFixed(Math.max(0, -ticksY.order + 1)), yAxisLeft - tickLength - 5, y);
 
         ctx.beginPath();
-        ctx.moveTo(yAxisLeft - tickLength, Math.floor(y) + 0.5);
-        ctx.lineTo(yAxisLeft, Math.floor(y) + 0.5);
+        ctx.moveTo(yAxisLeft - tickLength, y);
+        ctx.lineTo(yAxisLeft, y);
         ctx.stroke();
     }
 }
@@ -300,13 +378,22 @@ function redrawSeries(id)
 
     //console.log("Series spec:", seriesSpec, "Axes spec:", axesSpec);
 
+    if (axesSpec.rangeX == "auto" || axesSpec.rangeY == "auto")
+    {
+        redrawAxes(axes);
+    }
+
     if (axesSpec.rangeX == "auto")
     {
-        // If x-range is auto, look at cached range.
-        if (seriesData[id].cachedMinX == undefined)
-            cacheDataRange(id);
-        var minX = seriesData[id].cachedMinX;
-        var maxX = seriesData[id].cachedMaxX;
+        // Axes must have been redrawn by now.
+        if (seriesData[id].axesMinX == undefined)
+        {
+            console.error("Axes not redrawn before series redraw");
+            return;
+        }
+
+        var minX = seriesData[id].axesMinX;
+        var maxX = seriesData[id].axesMaxX;
     }
     else
     {
@@ -317,11 +404,15 @@ function redrawSeries(id)
 
     if (axesSpec.rangeY == "auto")
     {
-        // If y-range is auto, look at cached range.
-        if (seriesData[id].cachedMinY == undefined)
-            cacheDataRange(id);
-        var minY = seriesData[id].cachedMinY;
-        var maxY = seriesData[id].cachedMaxY;
+        // Axes must have been redrawn by now.
+        if (seriesData[id].axesMinX == undefined)
+        {
+            console.error("Axes not redrawn before series redraw");
+            return;
+        }
+
+        var minY = seriesData[id].axesMinY;
+        var maxY = seriesData[id].axesMaxY;
     }
     else
     {
@@ -330,10 +421,6 @@ function redrawSeries(id)
         var maxY = axesSpec.rangeY[1];
     }
 
-    if (axesSpec.rangeX == "auto" || axesSpec.rangeY == "auto")
-    {
-        redrawAxes(axes);
-    }
 
     var width = series.width();
     var height = series.height();
@@ -390,14 +477,6 @@ function getTicks(min, max, length, ctx)
 
     var minTickDiff = range / maxTicks;
 
-    /*if (isNaN(minTickDiff) || ! isFinite(minTickDiff))
-    {
-        console.warn("NaN in calculating ticks. Return none.");
-        return [];
-    }*/
-
-    //console.log("minTickDiff", minTickDiff);
-
     var order = Math.ceil(Math.log(minTickDiff) / Math.log(10));
 
     var prevTwo = 2 * Math.pow(10, order - 1);   // e.g. 20
@@ -409,35 +488,64 @@ function getTicks(min, max, length, ctx)
     var tickDiff = minTickDiff; // This should immediately get overwritten with something more sensible.
 
     if (prevTwo > minTickDiff)
+    {
         tickDiff = prevTwo;
+        minorTickDiff = prevTwo / 2;
+    }
     else if (prevFive > minTickDiff)
+    {
         tickDiff = prevFive;
+        minorTickDiff = prevFive / 5;
+    }
     else if (one > minTickDiff)
+    {
         tickDiff = one;
+        minorTickDiff = one / 2;
+    }
     else if (two > minTickDiff)
+    {
         tickDiff = two;
+        minorTickDiff = two / 2;
+    }
     else if (five > minTickDiff)
+    {
         tickDiff = five;
+        minorTickDiff = five / 5;
+    }
 
     // tickDiff should now be correct.
     //console.log("tickDiff", tickDiff);
 
     var minTick = Math.ceil(min / tickDiff) * tickDiff;
 
+    // Make sure we generate enough ticks.
+    var tickCount = Math.ceil((max - min) / tickDiff) + 1;
+    var minorTickCount = Math.ceil((max - min) / minorTickDiff) + 1;
+
     var ticks = [minTick];
 
-    
-    while (true)
+    for (var i = 1; i < tickCount; i++)
     {
-        var nextTick = ticks[ticks.length - 1] + tickDiff;
+        var nextTick = minTick + i * tickDiff;
         if (nextTick > max)
             break;
-        ticks.push(nextTick)
+        ticks.push(nextTick);
+    }
+
+    var minorTicks = [minTick];
+
+    for (var i = 1; i < minorTickCount; i++)
+    {
+        var nextTick = minTick + i * minorTickDiff;
+        if (nextTick > max)
+            break;
+        minorTicks.push(nextTick);
     }
 
     //console.log("ticks", ticks);
     return {
         positions: ticks,
+        minorPositions: minorTicks,
         order: order,
         space: minTickSpace
     };

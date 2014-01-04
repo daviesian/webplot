@@ -4,6 +4,7 @@
 #include "Series.h"
 
 #include <deque>
+#include <mutex>
 
 namespace WebPlotter {
 
@@ -11,6 +12,7 @@ namespace WebPlotter {
 
 	private:
 
+		std::mutex pointMutex;
 		std::deque<float> xs, ys;
 		float keepDuration;
 
